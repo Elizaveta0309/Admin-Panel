@@ -1,0 +1,37 @@
+version: '3'
+services:
+  service:
+    build: app
+    volumes:
+     - static_volume:/opt/app/static
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./configs:/etc/nginx/conf.d:ro
+      - ./data:/data/
+      - static_volume:/data/static
+    depends_on:
+      - service
+    ports:
+      - "80:80"
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+
+
+
+
+volumes:
+  static_volume:
+  postgres_data:
