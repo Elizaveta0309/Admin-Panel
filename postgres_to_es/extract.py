@@ -1,38 +1,39 @@
+import psycopg2.extras
 
 
-class PostgresProducer:
+class PostgresExtractor:
     def __init__(self, connection):
         self.conn = connection
         self.curs = connection.cursor()
 
-    def produce(self, query: str):
+    def extract(self, query: str, dict_param: bool):
+        """ Извлекает данные из Postgres по запросу
+              Args:
+                  query: строка запроса
+                  dict_param: указывает приводить извлеченные данные в формат словаря или нет
+              Returns:
+                  генератор извлеченных данных
+           """
         self.curs.execute(query)
         while True:
             results = self.curs.fetchmany(100)
             if not results:
                 break
             for result in results:
-                yield result
+                if dict_param:
+                    yield dict(result)
+                else:
+                    yield result
 
+    def extract_ids(self, query: str):
+        """Извлекает ids измененных записей по персонам или жанрам"""
+        return self.extract(query, False)
 
-class PostgresEnricher:
-    def __init__(self, connection):
-        self.conn = connection
-        self.curs = connection.cursor()
+    def extract_filmworks_ids(self, query: str):
+        """Извлекает ids, связанных с измененными персонами или жанрами кинопроизведений """
+        return self.extract(query, False)
 
-    def enrich(self, data):
-        tuple_data = tuple(''.join(item) for item in data)
-        query_2 = "SELECT fw.id FROM content.film_work fw LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = " \
-                  "fw.id WHERE pfw.person_id IN {ids} ORDER BY fw.modified; ".format(ids=tuple_data)
-        print(query_2)
-        self.curs.execute(query_2)
-        while True:
-            results = self.curs.fetchmany(100)
-            if not results:
-                break
-            for result in results:
-                yield result
-
-
-class PostgresMerger:
-    pass
+    def extract_entire_filmworks(self, query: str):
+        """Извлекает всю необходимую  для загрузки в ElasticSearch информаицию по кинопроизведениям """
+        self.curs = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        return self.extract(query, True)
