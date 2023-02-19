@@ -1,10 +1,11 @@
 import datetime
 import os
-import time
-from functools import wraps
+import backoff
+
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection as _connection
+from elasticsearch import Elasticsearch
 
 from extract import PostgresExtractor
 from load import ElasticLoader
@@ -46,47 +47,17 @@ def is_not_empty(iterable):
     return True
 
 
-def backoff(start_sleep_time=0.1, factor=2, border_sleep_time=10):
-    """ Функция для повторного выполнения функции через некоторое время, если возникла ошибка.
-     Args:
-          param start_sleep_time: начальное время повтора
-          param factor: во сколько раз нужно увеличить время ожидания
-          param border_sleep_time: граничное время ожидания
-     Returns:
-          результат выполнения функции
-    """
-    def func_wrapper(func):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            tries = 1  # номер попытки выполнения функции
-            t = start_sleep_time
-            while tries:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print(e)
-                    if t < border_sleep_time:
-                        t = start_sleep_time * factor ** tries
-                    elif t >= border_sleep_time:
-                        t = border_sleep_time
-                    time.sleep(t)
-                    tries += 1
-
-        return inner
-
-    return func_wrapper
-
-
-@backoff(start_sleep_time=0.1, factor=2, border_sleep_time=10)
-def extract_transform_load(conn: _connection, queries: dict):
+@backoff.on_exception(backoff.expo, (ConnectionError, TimeoutError))
+def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch):
     """Основной метод загрузки данных из Postgres в ElasticSearch
      Args:
             conn: подключение к Postgres
+            es:instance of ElasticSearch
             queries: словарь с запросами, необходимыми для загрузки данных по персонам, жанрам или кинопроизведениям
     """
     postgres_extractor = PostgresExtractor(conn)
     data_transformer = DataTransformer()
-    elastic_loader = ElasticLoader()
+    elastic_loader = ElasticLoader(es)
     json_file_storage = JsonFileStorage('fileStorage.txt')
     state = State(json_file_storage)
     last_modified = state.get_state('last_modified')
@@ -119,5 +90,8 @@ if __name__ == '__main__':
         'password': os.environ.get('DB_PASSWORD'),
         'host': os.environ.get('DB_HOST'),
         'port': os.environ.get('DB_PORT')}
+
+    es = Elasticsearch(os.environ.get('ES_NAME'))
+
     with conn_psql_context(dsl) as pg_conn:
-        extract_transform_load(pg_conn, PERSONS_QUERIES)
+        extract_transform_load(pg_conn, PERSONS_QUERIES, es)
