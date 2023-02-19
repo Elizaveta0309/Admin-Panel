@@ -131,3 +131,5 @@ dmypy.json
 /.idea
 
 /static
+
+postgres_to_es/fileStorage.txt
