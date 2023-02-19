@@ -117,7 +117,7 @@ if __name__ == '__main__':
         'dbname': os.environ.get('DB_NAME'),
         'user': os.environ.get('DB_USER'),
         'password': os.environ.get('DB_PASSWORD'),
-        'host': '127.0.0.1',
-        'port': 5432}
+        'host': os.environ.get('DB_HOST'),
+        'port': os.environ.get('DB_PORT')}
     with conn_psql_context(dsl) as pg_conn:
         extract_transform_load(pg_conn, PERSONS_QUERIES)
