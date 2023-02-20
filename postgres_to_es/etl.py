@@ -66,7 +66,7 @@ def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch, 
     if queries['type'] == 'filmworks':
         filmworks = postgres_extractor.extract_entire_filmworks(
             add_date_to_query(queries['for_entire_filmworks'], last_modified))
-        filmworks_json = data_transformer.gen_json_data(filmworks)
+        filmworks_json = data_transformer.transform_data(filmworks)
         elastic_loader.load(filmworks_json)
         state.set_state('last_modified', str(datetime.datetime.now()))
     elif queries['type'] == 'persons' or queries['type'] == 'genres':
@@ -76,7 +76,7 @@ def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch, 
                 add_ids_to_query(queries['for_filmworks_ids'], ids))
             filmworks = postgres_extractor.extract_entire_filmworks(
                 add_ids_to_query(query['for_entire_filmworks'], filmworks_ids))
-            filmworks_json = data_transformer.gen_json_data(filmworks)
+            filmworks_json = data_transformer.transform_data(filmworks)
             elastic_loader.load(filmworks_json)
             state.set_state('last_modified', str(datetime.datetime.now()))
     else:
