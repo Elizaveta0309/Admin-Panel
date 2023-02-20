@@ -9,7 +9,7 @@ from elasticsearch import Elasticsearch
 
 from extract import PostgresExtractor
 from load import ElasticLoader
-from queries import PERSONS_QUERIES, GENRES_QUERIES, FILMWORKS_QUERY
+from queries import PERSONS_QUERIES, GENRES_QUERIES, FILMWORKS_QUERY, FILMWORKS_QUERY_BY_IDS
 from sqlite_to_postgres.my_conn_managers import conn_psql_context
 from state import JsonFileStorage, State
 from transform import DataTransformer
@@ -48,11 +48,12 @@ def is_not_empty(iterable):
 
 
 @backoff.on_exception(backoff.expo, (ConnectionError, TimeoutError))
-def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch):
+def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch, query=FILMWORKS_QUERY_BY_IDS):
     """Основной метод загрузки данных из Postgres в ElasticSearch
      Args:
             conn: подключение к Postgres
             es:instance of ElasticSearch
+            query: итоговый запрос для получения всех данных по кинопроизведению для смежных таблиц
             queries: словарь с запросами, необходимыми для загрузки данных по персонам, жанрам или кинопроизведениям
     """
     postgres_extractor = PostgresExtractor(conn)
@@ -74,7 +75,7 @@ def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch):
             filmworks_ids = postgres_extractor.extract_filmworks_ids(
                 add_ids_to_query(queries['for_filmworks_ids'], ids))
             filmworks = postgres_extractor.extract_entire_filmworks(
-                add_ids_to_query(queries['for_entire_filmworks'], filmworks_ids))
+                add_ids_to_query(query['for_entire_filmworks'], filmworks_ids))
             filmworks_json = data_transformer.gen_json_data(filmworks)
             elastic_loader.load(filmworks_json)
             state.set_state('last_modified', str(datetime.datetime.now()))
