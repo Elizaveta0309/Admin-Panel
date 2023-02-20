@@ -36,14 +36,20 @@ FILMWORKS_QUERY_BY_IDS = dict(
                          'fw.title, '
                          'fw.description, '
                          'fw.rating, '
-                         'pfw.role, '
-                         'p.id as p_id, '
-                         'p.full_name,'
-                         ' g.name as g_name'
+                         ' COALESCE ( json_agg(  DISTINCT jsonb_build_object'
+                         "('person_role', pfw.role,"
+                         " 'person_id', p.id,"
+                         " 'person_name', p.full_name )" 
+                         " ) FILTER (WHERE p.id is not null), "
+                         "'[]'" 
+                         ") as persons,"
+                         " ARRAY_AGG(DISTINCT g.name) genres"
                          ' FROM content.film_work fw'
                          ' LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = fw.id'
                          ' LEFT JOIN content.person p ON p.id = pfw.person_id'
                          ' LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id'
                          ' LEFT JOIN content.genre g ON g.id = gfw.genre_id'
-                         ' WHERE fw.id IN {ids}; '
+                         ' WHERE fw.id IN {ids}'
+                         'GROUP BY fw.id'
+
 )
