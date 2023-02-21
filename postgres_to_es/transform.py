@@ -1,5 +1,5 @@
 def create_dict(item: dict) -> dict:
-    """Функция """
+    """Функция создания словаря """
     temp_dict = dict()
     temp_dict['id'] = item['fw_id']
     temp_dict['title'] = item['title']
@@ -9,12 +9,12 @@ def create_dict(item: dict) -> dict:
     temp_dict['actors_names'] = []
     temp_dict['writers'] = []
     temp_dict['writers_names'] = []
-    temp_dict['genres'] = []
+    temp_dict['genre'] = []
     return temp_dict
 
 
 def add_info_to_dict(item: dict, temp_dict: dict):
-    """Функция d"""
+    """Функция добавления информациии в словарь"""
     for p in item['persons']:
         if p['person_role'] == 'director':
             temp_dict['director'] = p['person_name']
@@ -25,7 +25,7 @@ def add_info_to_dict(item: dict, temp_dict: dict):
             temp_dict['writers_names'].append(p['person_name'])
             temp_dict['writers'].append({"id": p['person_id'], "name": p['person_name']})
     for g in item['genres']:
-        temp_dict['genres'].append(g)
+        temp_dict['genre'].append(g)
 
 
 class DataTransformer:
