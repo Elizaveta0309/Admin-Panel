@@ -32,7 +32,7 @@ FILMWORKS_QUERY = dict(
                          ' LEFT JOIN content.person p ON p.id = pfw.person_id'
                          ' LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id'
                          ' LEFT JOIN content.genre g ON g.id = gfw.genre_id'
-                         ' WHERE fw.modified > \'{date} \'ORDER BY fw.modified; '
+                         ' WHERE fw.modified > \'{date} \' GROUP BY fw.id ORDER BY fw.modified;'
 )
 FILMWORKS_QUERY_BY_IDS = dict(
     for_entire_filmworks='SELECT'
