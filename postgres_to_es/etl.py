@@ -1,7 +1,7 @@
 import datetime
 import os
 import backoff
-
+import logging
 
 from dotenv import load_dotenv
 from psycopg2.extensions import connection as _connection
@@ -80,7 +80,7 @@ def extract_transform_load(conn: _connection, queries: dict, es: Elasticsearch, 
             elastic_loader.load(filmworks_json)
             state.set_state('last_modified', str(datetime.datetime.now()))
     else:
-        print("Wrong type!")
+        logging.error('Wrong type!')
 
 
 if __name__ == '__main__':
